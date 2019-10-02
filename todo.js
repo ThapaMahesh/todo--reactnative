@@ -1,18 +1,11 @@
 import React, {Component} from 'react';
-import { StyleSheet, Text, FlatList} from 'react-native';
+import { StyleSheet, StatusBar, FlatList, AsyncStorage, RefreshControl, ScrollView, Platform} from 'react-native';
 import {Container,
         Header,
         Title,
         Content,
-        Button,
         Body,
-        CheckBox,
-        List,
-        ListItem,
-        Input,
-        Icon,
-        Right,
-        Left
+        Toast
     } from  'native-base';
 
 
@@ -26,26 +19,59 @@ class Todo extends Component{
 
         this.state = {
             itemList: [],
-            currentIndex: 0
+            currentIndex: 0,
+            refreshing: false
         }
         this.list = [];
-
+        this._retrieveData();
     }
+
+    _retrieveData = async () => {
+        try {
+          const value = await AsyncStorage.getItem('Tasks');
+          if (value !== null) {
+            // We have data!!
+            let oldStateData = JSON.parse(value);
+            this.setState({
+                itemList: oldStateData.itemList,
+                currentIndex: oldStateData.currentIndex,
+                refreshing: false
+            });
+
+            this.list = oldStateData.itemList;
+          }
+        } catch (error) {
+          // Error retrieving data
+        }
+    };
+
+    _storeData = async () => {
+        try {
+          await AsyncStorage.setItem('Tasks', JSON.stringify(this.state));
+        } catch (error) {
+          // Error saving data
+        }
+    };
 
     addItemToList = (item) => {
         if(item.trim() != ""){
-            let newItem = {id: ""+(this.state.currentIndex + 1), title: item.trim(), isDone: false};
+            let newItem = {id: (this.state.currentIndex + 1), title: item.trim(), isDone: false};
             this.list.push(newItem);
-            this.setState({ itemList: this.list, currentIndex: this.state.currentIndex + 1 });
+            this.setState(
+                { itemList: this.list, currentIndex: this.state.currentIndex + 1 },
+                this._storeData
+            );
         }
     }
 
     removeItem = (id) => {
         let index = this.list.findIndex(x => x.id === id);
-
 		if(index > -1){
 			this.list.splice(index, 1);
-	    	this.setState({itemList: this.list});
+	    	this.setState(
+                {itemList: this.list},
+                this._storeData
+            );
 	    }
     }
 
@@ -55,27 +81,50 @@ class Todo extends Component{
 		if(index > -1){
 			this.list[index].isDone = !this.list[index].isDone;
 
-		    this.setState({itemList: this.list});  
+		    this.setState(
+                {itemList: this.list},
+                this._storeData
+            );
 		}
-	}
+    }
+    
+    onRefresh = () => {
+        //Clear old data of the list
+        this.setState({
+            itemList: [],
+            refreshing: true
+        },
+        //Call the Service to get the latest data
+        this._retrieveData
+        );
+      }
 
     render(){
         return (
-            <Container style={styles.mainContainer}>
-                <Header>
+            <Container style={styles.mainContainer} >
+                {/* <StatusBar hidden /> */}
+                <Header style={styles.header}>
                     <Body>
                         <Title>Todo</Title>
                     </Body>
                 </Header>
-                <Content>
-                    <AddForm addItemToList={this.addItemToList} />
+                <Content style={styles.mainContainer}>
+                    <ScrollView refreshControl={
+                                            <RefreshControl
+                                            //refresh control used for the Pull to Refresh
+                                            refreshing={this.state.refreshing}
+                                            onRefresh={this.onRefresh}
+                                            />
+                    }>
+                        <AddForm addItemToList={this.addItemToList} />
 
-                    <FlatList
-                        data={this.state.itemList}
-                        renderItem={({item}) => <ItemList changeStatus={this.changeStatus} removeItem={this.removeItem} item={item} />}
-                        keyExtractor={item => item.id}
-                        extraData={this.state}
-                    />
+                        <FlatList
+                            data={this.state.itemList}
+                            renderItem={({item}) => <ItemList changeStatus={this.changeStatus} removeItem={this.removeItem} item={item} />}
+                            keyExtractor={item => ""+item.id}
+                            extraData={this.state}
+                        />
+                    </ScrollView>
                 </Content>
             </Container>
         );
@@ -84,7 +133,12 @@ class Todo extends Component{
 
 const styles = StyleSheet.create({
     mainContainer: {
-        width: '100%'
+        width: '100%',
+        ...Platform.select({
+            android: {
+                marginTop: StatusBar.currentHeight
+            }
+        })
     },
     icons: {
         color: '#000'

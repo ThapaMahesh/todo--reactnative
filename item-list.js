@@ -14,11 +14,11 @@ class ItemList extends Component {
     }
 
     removeItem = (id) => {
-        this.props.removeItem(id);
+        this.props.removeItem(Number(id));
     }
 
     changeStatus = (id) => {
-        this.props.changeStatus(id);
+        this.props.changeStatus(Number(id));
     }
 
     render() {
