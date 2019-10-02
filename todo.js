@@ -105,7 +105,7 @@ class Todo extends Component{
                 {/* <StatusBar hidden /> */}
                 <Header style={styles.header}>
                     <Body>
-                        <Title>Todo</Title>
+                        <Title>Todo List</Title>
                     </Body>
                 </Header>
                 <Content style={styles.mainContainer}>
