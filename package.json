@@ -21,7 +21,7 @@
     "react-navigation-tabs": "^2.5.5"
   },
   "devDependencies": {
-    "babel-preset-expo": "^7.0.0",
+    "babel-preset-expo": "^7.0.0"
   },
   "private": true
 }
