@@ -1,3 +1,9 @@
+image: node:10.4
+
+cache:
+  paths:
+  - node_modules/
+
 stages:
   - test
 
